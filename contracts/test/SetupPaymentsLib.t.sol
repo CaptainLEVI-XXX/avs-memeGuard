@@ -6,13 +6,13 @@ import "../script/utils/SetupDistributionsLib.sol";
 import "../script/utils/CoreDeploymentParsingLib.sol";
 import "../script/utils/HelloWorldDeploymentLib.sol";
 import "@eigenlayer/contracts/interfaces/IRewardsCoordinator.sol";
-import "../src/IHelloWorldServiceManager.sol";
+import "../src/IMemeGuardServiceManager.sol";
 import "@eigenlayer/contracts/interfaces/IStrategy.sol";
 import "@eigenlayer/contracts/libraries/Merkle.sol";
 import "../script/DeployEigenLayerCore.s.sol";
 import "../script/HelloWorldDeployer.s.sol";
 import {StrategyFactory} from "@eigenlayer/contracts/strategies/StrategyFactory.sol";
-import {HelloWorldTaskManagerSetup} from "test/HelloWorldServiceManager.t.sol";
+import {MemeGuardServiceManagerSetup} from "test/MemeGuardServiceManager.t.sol";
 import {ECDSAServiceManagerBase} from
     "@eigenlayer-middleware/src/unaudited/ECDSAServiceManagerBase.sol";
 import {
@@ -32,13 +32,13 @@ contract TestConstants {
     uint256 NUM_EARNERS = 4;
 }
 
-contract SetupDistributionsLibTest is Test, TestConstants, HelloWorldTaskManagerSetup {
+contract SetupDistributionsLibTest is Test, TestConstants, MemeGuardServiceManagerSetup {
     using SetupDistributionsLib for *;
 
     Vm cheats = Vm(VM_ADDRESS);
 
     IRewardsCoordinator public rewardsCoordinator;
-    IHelloWorldServiceManager public helloWorldServiceManager;
+    IMemeGuardServiceManager public memeGuardServiceManager;
     IStrategy public strategy;
 
     address rewardsInitiator = address(1);
@@ -62,13 +62,13 @@ contract SetupDistributionsLibTest is Test, TestConstants, HelloWorldTaskManager
             IECDSAStakeRegistryTypes.StrategyParams({strategy: strategy, multiplier: 10_000})
         );
 
-        helloWorldDeployment = HelloWorldDeploymentLib.deployContracts(
+        memeGuardDeployment = HelloWorldDeploymentLib.deployContracts(
             proxyAdmin, coreDeployment, quorum, rewardsInitiator, rewardsOwner
         );
-        labelContracts(coreDeployment, helloWorldDeployment);
+        labelContracts(coreDeployment, memeGuardDeployment);
 
         cheats.prank(rewardsOwner);
-        ECDSAServiceManagerBase(helloWorldDeployment.helloWorldServiceManager).setRewardsInitiator(
+        ECDSAServiceManagerBase(memeGuardDeployment.memeGuardServiceManager).setRewardsInitiator(
             rewardsInitiator
         );
 
@@ -215,12 +215,12 @@ contract SetupDistributionsLibTest is Test, TestConstants, HelloWorldTaskManager
 
         cheats.prank(rewardsInitiator);
         mockToken.increaseAllowance(
-            helloWorldDeployment.helloWorldServiceManager, amountPerPayment * numPayments
+            memeGuardDeployment.memeGuardServiceManager, amountPerPayment * numPayments
         );
 
         cheats.startPrank(rewardsInitiator);
         SetupDistributionsLib.createAVSRewardsSubmissions(
-            address(helloWorldDeployment.helloWorldServiceManager),
+            address(memeGuardDeployment.memeGuardServiceManager),
             address(strategy),
             numPayments,
             amountPerPayment,

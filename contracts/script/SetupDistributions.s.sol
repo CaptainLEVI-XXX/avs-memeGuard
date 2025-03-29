@@ -159,11 +159,11 @@ contract SetupDistributions is Script, Test {
             helloWorldConfig.rewardsInitiator, _amountPerPayment * _numPayments
         );
         ERC20Mock(helloWorldDeployment.token).increaseAllowance(
-            helloWorldDeployment.helloWorldServiceManager, _amountPerPayment * _numPayments
+            helloWorldDeployment.memeGuardServiceManager, _amountPerPayment * _numPayments
         );
         uint32 duration = rewardsCoordinator.MAX_REWARDS_DURATION();
         SetupDistributionsLib.createAVSRewardsSubmissions(
-            helloWorldDeployment.helloWorldServiceManager,
+            helloWorldDeployment.memeGuardServiceManager,
             helloWorldDeployment.strategy,
             _numPayments,
             _amountPerPayment,
@@ -182,14 +182,14 @@ contract SetupDistributions is Script, Test {
             helloWorldConfig.rewardsInitiator, _amountPerPayment * _numPayments
         );
         ERC20Mock(helloWorldDeployment.token).increaseAllowance(
-            helloWorldDeployment.helloWorldServiceManager, _amountPerPayment * _numPayments
+            helloWorldDeployment.memeGuardServiceManager, _amountPerPayment * _numPayments
         );
         address[] memory operators = new address[](2);
         operators[0] = operator1;
         operators[1] = operator2;
 
         SetupDistributionsLib.createOperatorDirectedAVSRewardsSubmissions(
-            helloWorldDeployment.helloWorldServiceManager,
+            helloWorldDeployment.memeGuardServiceManager,
             operators,
             helloWorldDeployment.strategy,
             _numPayments,

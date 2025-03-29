@@ -9,7 +9,7 @@ import {console2} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {ECDSAStakeRegistry} from "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
-import {HelloWorldServiceManager} from "../../src/HelloWorldServiceManager.sol";
+import {MemeGuardServiceManager} from "../../src/MemeGuardServiceManager.sol";
 import {IDelegationManager} from "@eigenlayer/contracts/interfaces/IDelegationManager.sol";
 import {IECDSAStakeRegistryTypes} from
     "@eigenlayer-middleware/src/interfaces/IECDSAStakeRegistry.sol";
@@ -25,7 +25,7 @@ library HelloWorldDeploymentLib {
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     struct DeploymentData {
-        address helloWorldServiceManager;
+        address memeGuardServiceManager;
         address stakeRegistry;
         address strategy;
         address token;
@@ -49,7 +49,7 @@ library HelloWorldDeploymentLib {
 
         {
             // First, deploy upgradeable proxy contracts that will point to the implementations.
-            result.helloWorldServiceManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+            result.memeGuardServiceManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
             result.stakeRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
         }
         deployAndUpgradeStakeRegistryImpl(result, core, quorum);
@@ -67,7 +67,7 @@ library HelloWorldDeploymentLib {
             address(new ECDSAStakeRegistry(IDelegationManager(core.delegationManager)));
 
         bytes memory upgradeCall = abi.encodeCall(
-            ECDSAStakeRegistry.initialize, (deployment.helloWorldServiceManager, 0, quorum)
+            ECDSAStakeRegistry.initialize, (deployment.memeGuardServiceManager, 0, quorum)
         );
         UpgradeableProxyLib.upgradeAndCall(deployment.stakeRegistry, stakeRegistryImpl, upgradeCall);
     }
@@ -78,9 +78,9 @@ library HelloWorldDeploymentLib {
         address owner,
         address rewardsInitiator
     ) private {
-        address helloWorldServiceManager = deployment.helloWorldServiceManager;
+        address memeGuardServiceManager = deployment.memeGuardServiceManager;
         address helloWorldServiceManagerImpl = address(
-            new HelloWorldServiceManager(
+            new MemeGuardServiceManager(
                 core.avsDirectory,
                 deployment.stakeRegistry,
                 core.rewardsCoordinator,
@@ -91,10 +91,10 @@ library HelloWorldDeploymentLib {
         );
 
         bytes memory upgradeCall =
-            abi.encodeCall(HelloWorldServiceManager.initialize, (owner, rewardsInitiator));
+            abi.encodeCall(MemeGuardServiceManager.initialize, (owner, rewardsInitiator));
 
         UpgradeableProxyLib.upgradeAndCall(
-            helloWorldServiceManager, helloWorldServiceManagerImpl, upgradeCall
+            memeGuardServiceManager, helloWorldServiceManagerImpl, upgradeCall
         );
     }
 
@@ -116,7 +116,7 @@ library HelloWorldDeploymentLib {
 
         DeploymentData memory data;
         /// TODO: 2 Step for reading deployment json.  Read to the core and the AVS data
-        data.helloWorldServiceManager = json.readAddress(".addresses.helloWorldServiceManager");
+        data.memeGuardServiceManager = json.readAddress(".addresses.memeGuardServiceManager");
         data.stakeRegistry = json.readAddress(".addresses.stakeRegistry");
         data.strategy = json.readAddress(".addresses.strategy");
         data.token = json.readAddress(".addresses.token");
@@ -137,7 +137,7 @@ library HelloWorldDeploymentLib {
         DeploymentData memory data
     ) internal {
         address proxyAdmin =
-            address(UpgradeableProxyLib.getProxyAdmin(data.helloWorldServiceManager));
+            address(UpgradeableProxyLib.getProxyAdmin(data.memeGuardServiceManager));
 
         string memory deploymentData = _generateDeploymentJson(data, proxyAdmin);
 
@@ -200,10 +200,10 @@ library HelloWorldDeploymentLib {
         return string.concat(
             '{"proxyAdmin":"',
             proxyAdmin.toHexString(),
-            '","helloWorldServiceManager":"',
-            data.helloWorldServiceManager.toHexString(),
+            '","memeGuardServiceManager":"',
+            data.memeGuardServiceManager.toHexString(),
             '","helloWorldServiceManagerImpl":"',
-            data.helloWorldServiceManager.getImplementation().toHexString(),
+            data.memeGuardServiceManager.getImplementation().toHexString(),
             '","stakeRegistry":"',
             data.stakeRegistry.toHexString(),
             '","stakeRegistryImpl":"',
