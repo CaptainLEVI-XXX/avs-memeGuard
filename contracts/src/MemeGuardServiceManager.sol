@@ -26,7 +26,7 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @param taskCreatedBlock Block number when the task was created
      */
     struct Task {
-        string assessmentType;  
+        string assessmentType;
         bytes32 targetId;
         address targetAddress;
         uint32 taskCreatedBlock;
@@ -53,7 +53,7 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @param task Task details
      */
     event NewTaskCreated(uint32 taskId, Task task);
-    
+
     /**
      * @notice Emitted when an operator responds to a task
      * @param taskId ID of the task being responded to
@@ -61,7 +61,7 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @param operator Address of the responding operator
      */
     event TaskResponded(uint32 taskId, Task task, address operator);
-    
+
     /**
      * @notice Emitted when a risk assessment is submitted
      * @param targetId ID of the target being assessed
@@ -69,13 +69,8 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @param riskScore Risk score assessment
      * @param isCritical Whether a critical vulnerability was found
      */
-    event RiskAssessmentSubmitted(
-        bytes32 targetId,
-        string assessmentType,
-        uint8 riskScore,
-        bool isCritical
-    );
-    
+    event RiskAssessmentSubmitted(bytes32 targetId, string assessmentType, uint8 riskScore, bool isCritical);
+
     /**
      * @notice Emitted when consensus is reached on a risk assessment
      * @param targetId ID of the target being assessed
@@ -83,43 +78,37 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @param riskScore Consensus risk score
      * @param isCritical Consensus on critical status
      */
-    event RiskConsensusReached(
-        bytes32 targetId,
-        string assessmentType,
-        uint8 riskScore,
-        bool isCritical
-    );
+    event RiskConsensusReached(bytes32 targetId, string assessmentType, uint8 riskScore, bool isCritical);
 
     // ============ Task Management ============
     uint32 public latestTaskNum;
     mapping(uint32 => bytes32) public allTaskHashes;
     mapping(address => mapping(uint32 => bytes)) public allTaskResponses;
-    
+
     // ============ Risk Assessment Storage ============
     // Maps assessment type + target ID to a mapping of operator responses
     mapping(bytes32 => mapping(address => RiskAssessment)) public operatorAssessments;
-    
+
     // Maps assessment type + target ID to consensus data
     mapping(bytes32 => RiskAssessment) public consensusAssessments;
-    
+
     // Maps assessment type + target ID + risk score to vote count
     mapping(bytes32 => mapping(uint8 => uint256)) public riskScoreVotes;
-    
+
     // Maps assessment type + target ID to critical risk vote count
     mapping(bytes32 => uint256) public criticalRiskVotes;
-    
+
     // Tracks operators who have submitted assessments
     mapping(bytes32 => mapping(address => bool)) public hasSubmittedAssessment;
-    
+
     // ============ Configuration ============
     uint256 public quorum;
     mapping(address => bool) public authorizedCallers;
 
-
     // max interval in blocks for responding to a task
     // operators can be penalized if they don't respond in time
     uint32 public immutable MAX_RESPONSE_INTERVAL_BLOCKS;
-    
+
     // ============ Errors ============
     error InvalidTask();
     error TaskAlreadyResponded();
@@ -135,9 +124,8 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @param _delegationManager Delegation Manager address
      * @param _allocationManager Allocation mAnager
      * @param _maxResponseIntervalBlocks  max responsive between blocks
-     * param 
+     * param
      */
-
     constructor(
         address _avsDirectory,
         address _stakeRegistry,
@@ -146,19 +134,12 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
         address _allocationManager,
         uint32 _maxResponseIntervalBlocks
     )
-        ECDSAServiceManagerBase(
-            _avsDirectory,
-            _stakeRegistry,
-            _rewardsCoordinator,
-            _delegationManager,
-            _allocationManager
-        )
+        ECDSAServiceManagerBase(_avsDirectory, _stakeRegistry, _rewardsCoordinator, _delegationManager, _allocationManager)
     {
-
         MAX_RESPONSE_INTERVAL_BLOCKS = _maxResponseIntervalBlocks;
         quorum = 3; // Default quorum
     }
-    
+
     /**
      * @notice Initializes the service manager
      * @param initialOwner Initial owner address
@@ -167,9 +148,9 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
     function initialize(address initialOwner, address _rewardsInitiator) external initializer {
         __ServiceManagerBase_init(initialOwner, _rewardsInitiator);
     }
-    
+
     // ============ Authorization Functions ============
-    
+
     /**
      * @notice Set authorized caller status
      * @param caller Address to authorize/deauthorize
@@ -178,7 +159,7 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
     function setAuthorizedCaller(address caller, bool status) external onlyOwner {
         authorizedCallers[caller] = status;
     }
-    
+
     /**
      * @notice Set quorum requirement
      * @param _quorum New quorum value
@@ -186,7 +167,7 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
     function setQuorum(uint256 _quorum) external onlyOwner {
         quorum = _quorum;
     }
-    
+
     /**
      * @notice Only authorized callers or owner can call
      */
@@ -196,9 +177,9 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
         }
         _;
     }
-    
+
     // ============ Task Management Functions ============
-    
+
     /**
      * @notice Create a new assessment task
      * @param assessmentType Type of assessment ("strategy", "token", or "transition")
@@ -206,30 +187,29 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @param targetAddress Address of the target implementation or token
      * @return task The created task
      */
-    function createAssessmentTask(
-        string calldata assessmentType,
-        bytes32 targetId,
-        address targetAddress
-    ) external returns (Task memory) {
+    function createAssessmentTask(string calldata assessmentType, bytes32 targetId, address targetAddress)
+        external
+        returns (Task memory)
+    {
         // Create new task
         Task memory newTask;
         newTask.assessmentType = assessmentType;
         newTask.targetId = targetId;
         newTask.targetAddress = targetAddress;
         newTask.taskCreatedBlock = uint32(block.number);
-        
+
         // Store task hash
         allTaskHashes[latestTaskNum] = keccak256(abi.encode(newTask));
-        
+
         // Emit event
         emit NewTaskCreated(latestTaskNum, newTask);
-        
+
         // Increment task counter
         latestTaskNum = latestTaskNum + 1;
-        
+
         return newTask;
     }
-    
+
     /**
      * @notice Respond to an assessment task
      * @param task The task being responded to
@@ -251,44 +231,29 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
         if (keccak256(abi.encode(task)) != allTaskHashes[taskId]) {
             revert InvalidTask();
         }
-        
+
         // Verify operator hasn't already responded
         if (allTaskResponses[msg.sender][taskId].length > 0) {
             revert TaskAlreadyResponded();
         }
-        
+
         // Create assessment ID (combines assessment type and target ID)
         bytes32 assessmentId = keccak256(abi.encodePacked(task.assessmentType, task.targetId));
-        
+
         // Verify signature
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(
-                task.assessmentType,
-                task.targetId,
-                riskScore,
-                isCritical,
-                reportHash
-            )
-        );
+        bytes32 messageHash =
+            keccak256(abi.encodePacked(task.assessmentType, task.targetId, riskScore, isCritical, reportHash));
         bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
         bytes4 magicValue = IERC1271Upgradeable.isValidSignature.selector;
-        
+
         // Verify signature is valid
-        if (
-            !(
-                magicValue == 
-                ECDSAStakeRegistry(stakeRegistry).isValidSignature(
-                    ethSignedMessageHash, 
-                    signature
-                )
-            )
-        ) {
+        if (!(magicValue == ECDSAStakeRegistry(stakeRegistry).isValidSignature(ethSignedMessageHash, signature))) {
             revert InvalidSignature();
         }
-        
+
         // Store response
         allTaskResponses[msg.sender][taskId] = signature;
-        
+
         // Store assessment
         operatorAssessments[assessmentId][msg.sender] = RiskAssessment({
             targetId: task.targetId,
@@ -296,39 +261,35 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
             isCritical: isCritical,
             timestamp: block.timestamp
         });
-        
+
         // Mark as submitted
         hasSubmittedAssessment[assessmentId][msg.sender] = true;
-        
+
         // Update vote counts
         riskScoreVotes[assessmentId][riskScore]++;
         if (isCritical) {
             criticalRiskVotes[assessmentId]++;
         }
-        
+
         // Emit event
         emit RiskAssessmentSubmitted(task.targetId, task.assessmentType, riskScore, isCritical);
         emit TaskResponded(taskId, task, msg.sender);
-        
+
         // Check for consensus
         _checkForConsensus(assessmentId, task.assessmentType, task.targetId);
     }
-    
+
     /**
      * @notice Check if consensus has been reached for an assessment
      * @param assessmentId Combined ID of assessment type and target
      * @param assessmentType Type of assessment
      * @param targetId ID of the target being assessed
      */
-    function _checkForConsensus(
-        bytes32 assessmentId,
-        string memory assessmentType,
-        bytes32 targetId
-    ) internal {
+    function _checkForConsensus(bytes32 assessmentId, string memory assessmentType, bytes32 targetId) internal {
         // Find risk score with most votes
         uint8 consensusRiskScore = 0;
         uint256 maxVotes = 0;
-        
+
         for (uint8 i = 0; i <= 100; i++) {
             uint256 votes = riskScoreVotes[assessmentId][i];
             if (votes > maxVotes) {
@@ -336,12 +297,12 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
                 consensusRiskScore = i;
             }
         }
-        
+
         // Check if risk score has reached quorum
         if (maxVotes >= quorum) {
             // Check if critical vulnerability consensus was reached
             bool consensusIsCritical = criticalRiskVotes[assessmentId] >= quorum;
-            
+
             // Record consensus
             consensusAssessments[assessmentId] = RiskAssessment({
                 targetId: targetId,
@@ -349,14 +310,14 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
                 isCritical: consensusIsCritical,
                 timestamp: block.timestamp
             });
-            
+
             // Emit event
             emit RiskConsensusReached(targetId, assessmentType, consensusRiskScore, consensusIsCritical);
         }
     }
-    
+
     // ============ View Functions ============
-    
+
     /**
      * @notice Check if strategy has critical risks
      * @param strategyId Strategy ID
@@ -364,21 +325,21 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @return riskScore The overall risk score
      * @return isCritical Whether the strategy has critical risks
      */
-    function checkStrategySafety(bytes32 strategyId) external view returns (
-        bool assessed,
-        uint8 riskScore,
-        bool isCritical
-    ) {
+    function checkStrategySafety(bytes32 strategyId)
+        external
+        view
+        returns (bool assessed, uint8 riskScore, bool isCritical)
+    {
         bytes32 assessmentId = keccak256(abi.encodePacked("strategy", strategyId));
         RiskAssessment memory assessment = consensusAssessments[assessmentId];
-        
+
         assessed = (assessment.timestamp > 0);
         riskScore = assessment.riskScore;
         isCritical = assessment.isCritical;
-        
+
         return (assessed, riskScore, isCritical);
     }
-    
+
     /**
      * @notice Check if token has suspicious activity
      * @param poolId Pool ID
@@ -386,21 +347,21 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @return riskScore The overall risk score
      * @return isSuspicious Whether the token is suspicious
      */
-    function checkTokenSafety(bytes32 poolId) external view returns (
-        bool assessed,
-        uint8 riskScore,
-        bool isSuspicious
-    ) {
+    function checkTokenSafety(bytes32 poolId)
+        external
+        view
+        returns (bool assessed, uint8 riskScore, bool isSuspicious)
+    {
         bytes32 assessmentId = keccak256(abi.encodePacked("token", poolId));
         RiskAssessment memory assessment = consensusAssessments[assessmentId];
-        
+
         assessed = (assessment.timestamp > 0);
         riskScore = assessment.riskScore;
         isSuspicious = assessment.isCritical; // Suspicious = critical
-        
+
         return (assessed, riskScore, isSuspicious);
     }
-    
+
     /**
      * @notice Check if a pool is ready for transition
      * @param poolId Pool ID
@@ -408,20 +369,20 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @return riskScore The overall risk score
      * @return isReady Whether the pool is ready for transition
      */
-    function checkTransitionReadiness(bytes32 poolId) external view returns (
-        bool assessed,
-        uint8 riskScore,
-        bool isReady
-    ) {
+    function checkTransitionReadiness(bytes32 poolId)
+        external
+        view
+        returns (bool assessed, uint8 riskScore, bool isReady)
+    {
         bytes32 assessmentId = keccak256(abi.encodePacked("transition", poolId));
         RiskAssessment memory assessment = consensusAssessments[assessmentId];
-        
+
         assessed = (assessment.timestamp > 0);
         riskScore = assessment.riskScore;
-        
+
         // A pool is ready for transition if it has no critical issues and risk score below threshold
         isReady = assessed && !assessment.isCritical && assessment.riskScore <= 50;
-        
+
         return (assessed, riskScore, isReady);
     }
 
