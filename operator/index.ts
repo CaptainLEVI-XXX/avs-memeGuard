@@ -9,6 +9,14 @@ if (!Object.keys(process.env).length) {
     throw new Error("process.env object is empty");
 }
 
+// Define the Task interface to match contract structure
+interface Task {
+    assessmentType: string;
+    targetId: string;
+    targetAddress: string;
+    taskCreatedBlock: number;
+}
+
 // Setup env variables
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
@@ -20,52 +28,58 @@ const avsDeploymentData = JSON.parse(fs.readFileSync(path.resolve(__dirname, `..
 const coreDeploymentData = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../contracts/deployments/core/${chainId}.json`), 'utf8'));
 
 
-const delegationManagerAddress = coreDeploymentData.addresses.delegationManager; // todo: reminder to fix the naming of this contract in the deployment file, change to delegationManager
+const delegationManagerAddress = coreDeploymentData.addresses.delegationManager; 
 const avsDirectoryAddress = coreDeploymentData.addresses.avsDirectory;
-const helloWorldServiceManagerAddress = avsDeploymentData.addresses.helloWorldServiceManager;
+const memeGuardServiceManagerAddress = avsDeploymentData.addresses.memeGuardServiceManager;
 const ecdsaStakeRegistryAddress = avsDeploymentData.addresses.stakeRegistry;
-
 
 
 // Load ABIs
 const delegationManagerABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../abis/IDelegationManager.json'), 'utf8'));
 const ecdsaRegistryABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../abis/ECDSAStakeRegistry.json'), 'utf8'));
-const helloWorldServiceManagerABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../abis/HelloWorldServiceManager.json'), 'utf8'));
+const memeGuardServiceManagerABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../abis/MemeGuardServiceManager.json'), 'utf8'));
 const avsDirectoryABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../abis/IAVSDirectory.json'), 'utf8'));
 
 // Initialize contract objects from ABIs
 const delegationManager = new ethers.Contract(delegationManagerAddress, delegationManagerABI, wallet);
-const helloWorldServiceManager = new ethers.Contract(helloWorldServiceManagerAddress, helloWorldServiceManagerABI, wallet);
+const memeGuardServiceManager = new ethers.Contract(memeGuardServiceManagerAddress, memeGuardServiceManagerABI, wallet);
 const ecdsaRegistryContract = new ethers.Contract(ecdsaStakeRegistryAddress, ecdsaRegistryABI, wallet);
 const avsDirectory = new ethers.Contract(avsDirectoryAddress, avsDirectoryABI, wallet);
 
 
-const signAndRespondToTask = async (taskIndex: number, taskCreatedBlock: number, taskName: string) => {
-    const message = `Hello, ${taskName}`;
-    const messageHash = ethers.solidityPackedKeccak256(["string"], [message]);
+const signAndRespondToTask = async (taskId: number, task: Task): Promise<void> => {
+    // For MemeGuard, we generate a risk assessment with a score, critical flag, and report hash
+    const riskScore = Math.floor(Math.random() * 100); // 0-99 risk score
+    const isCritical = Math.random() < 0.1; // 10% chance of critical
+    const reportHash = `QmReport${Math.floor(Math.random() * 10000)}`;
+    
+    console.log(`Processing task ${taskId}: ${task.assessmentType} for ${task.targetId}`);
+    console.log(`Generated assessment: Score ${riskScore}, Critical: ${isCritical}, Report: ${reportHash}`);
+
+    // Create message hash from assessment data
+    const messageHash = ethers.solidityPackedKeccak256(
+        ["string", "bytes32", "uint8", "bool", "string"],
+        [task.assessmentType, task.targetId, riskScore, isCritical, reportHash]
+    );
     const messageBytes = ethers.getBytes(messageHash);
     const signature = await wallet.signMessage(messageBytes);
 
-    console.log(`Signing and responding to task ${taskIndex}`);
+    console.log(`Responding to task ${taskId}`);
 
-    const operators = [await wallet.getAddress()];
-    const signatures = [signature];
-    const signedTask = ethers.AbiCoder.defaultAbiCoder().encode(
-        ["address[]", "bytes[]", "uint32"],
-        [operators, signatures, taskCreatedBlock]
-    );
-
-    const tx = await helloWorldServiceManager.respondToTask(
-        { name: taskName, taskCreatedBlock: taskCreatedBlock },
-        taskIndex,
-        signedTask
+    // Respond to the task with our assessment
+    const tx = await memeGuardServiceManager.respondToAssessment(
+        task,
+        taskId,
+        signature,
+        riskScore,
+        isCritical,
+        reportHash
     );
     await tx.wait();
-    console.log(`Responded to task.`);
+    console.log(`Successfully responded to task ${taskId}`);
 };
 
-const registerOperator = async () => {
-
+const registerOperator = async (): Promise<void> => {
     // Registers as an Operator in EigenLayer.
     try {
         const tx1 = await delegationManager.registerAsOperator(
@@ -89,10 +103,10 @@ const registerOperator = async () => {
         expiry: expiry
     };
 
-    // Calculate the digest hash, which is a unique value representing the operator, avs, unique value (salt) and expiration date.
+    // Calculate the digest hash
     const operatorDigestHash = await avsDirectory.calculateOperatorAVSRegistrationDigestHash(
         wallet.address,
-        await helloWorldServiceManager.getAddress(),
+        await memeGuardServiceManager.getAddress(),
         salt,
         expiry
     );
@@ -108,9 +122,7 @@ const registerOperator = async () => {
 
     console.log("Registering Operator to AVS Registry contract");
 
-
     // Register Operator to AVS
-    // Per release here: https://github.com/Layr-Labs/eigenlayer-middleware/blob/v0.2.1-mainnet-rewards/src/unaudited/ECDSAStakeRegistry.sol#L49
     const tx2 = await ecdsaRegistryContract.registerOperatorWithSignature(
         operatorSignatureWithSaltAndExpiry,
         wallet.address
@@ -119,19 +131,16 @@ const registerOperator = async () => {
     console.log("Operator registered on AVS successfully");
 };
 
-const monitorNewTasks = async () => {
-    //console.log(`Creating new task "EigenWorld"`);
-    //await helloWorldServiceManager.createNewTask("EigenWorld");
-
-    helloWorldServiceManager.on("NewTaskCreated", async (taskIndex: number, task: any) => {
-        console.log(`New task detected: Hello, ${task.name}`);
-        await signAndRespondToTask(taskIndex, task.taskCreatedBlock, task.name);
+const monitorNewTasks = async (): Promise<void> => {
+    memeGuardServiceManager.on("NewTaskCreated", async (taskIndex: number, task: Task) => {
+        console.log(`New task detected: ${task.assessmentType} assessment for target ${task.targetId}`);
+        await signAndRespondToTask(taskIndex, task);
     });
 
     console.log("Monitoring for new tasks...");
 };
 
-const main = async () => {
+const main = async (): Promise<void> => {
     await registerOperator();
     monitorNewTasks().catch((error) => {
         console.error("Error monitoring tasks:", error);

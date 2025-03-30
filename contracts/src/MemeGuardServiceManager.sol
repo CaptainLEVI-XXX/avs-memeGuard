@@ -8,8 +8,6 @@ import {ECDSAUpgradeable} from "@openzeppelin-upgrades/contracts/utils/cryptogra
 import {IERC1271Upgradeable} from "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-
-
 /**
  * @title MemeGuardServiceManager
  * @notice EigenLayer AVS for memecoin , strategy and Transtion risk assessment
@@ -28,7 +26,7 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
      * @param taskCreatedBlock Block number when the task was created
      */
     struct Task {
-        string assessmentType;
+        string assessmentType;  
         bytes32 targetId;
         address targetAddress;
         uint32 taskCreatedBlock;
@@ -212,7 +210,7 @@ contract MemeGuardServiceManager is ECDSAServiceManagerBase {
         string calldata assessmentType,
         bytes32 targetId,
         address targetAddress
-    ) external onlyAuthorized returns (Task memory) {
+    ) external returns (Task memory) {
         // Create new task
         Task memory newTask;
         newTask.assessmentType = assessmentType;

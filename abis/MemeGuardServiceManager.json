@@ -26,9 +26,27 @@
         "name": "_allocationManager",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "_maxResponseIntervalBlocks",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "MAX_RESPONSE_INTERVAL_BLOCKS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -101,6 +119,25 @@
   },
   {
     "type": "function",
+    "name": "authorizedCallers",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "avsDirectory",
     "inputs": [],
     "outputs": [
@@ -108,6 +145,127 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "checkStrategySafety",
+    "inputs": [
+      {
+        "name": "strategyId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "assessed",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "riskScore",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "isCritical",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "checkTokenSafety",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "assessed",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "riskScore",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "isSuspicious",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "checkTransitionReadiness",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "assessed",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "riskScore",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "isReady",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "consensusAssessments",
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "targetId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "riskScore",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "isCritical",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -166,24 +324,44 @@
   },
   {
     "type": "function",
-    "name": "createNewTask",
+    "name": "createAssessmentTask",
     "inputs": [
       {
-        "name": "name",
+        "name": "assessmentType",
         "type": "string",
         "internalType": "string"
+      },
+      {
+        "name": "targetId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "targetAddress",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct IHelloWorldServiceManager.Task",
+        "internalType": "struct MemeGuardServiceManager.Task",
         "components": [
           {
-            "name": "name",
+            "name": "assessmentType",
             "type": "string",
             "internalType": "string"
+          },
+          {
+            "name": "targetId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "targetAddress",
+            "type": "address",
+            "internalType": "address"
           },
           {
             "name": "taskCreatedBlock",
@@ -266,6 +444,25 @@
   },
   {
     "type": "function",
+    "name": "criticalRiskVotes",
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "deregisterOperatorFromAVS",
     "inputs": [
       {
@@ -329,6 +526,30 @@
   },
   {
     "type": "function",
+    "name": "hasSubmittedAssessment",
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "initialize",
     "inputs": [
       {
@@ -360,6 +581,45 @@
   },
   {
     "type": "function",
+    "name": "operatorAssessments",
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "targetId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "riskScore",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "isCritical",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "owner",
     "inputs": [],
     "outputs": [
@@ -367,6 +627,19 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "quorum",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -383,7 +656,7 @@
       {
         "name": "operatorSignature",
         "type": "tuple",
-        "internalType": "struct ISignatureUtils.SignatureWithSaltAndExpiry",
+        "internalType": "struct ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry",
         "components": [
           {
             "name": "signature",
@@ -464,17 +737,27 @@
   },
   {
     "type": "function",
-    "name": "respondToTask",
+    "name": "respondToAssessment",
     "inputs": [
       {
         "name": "task",
         "type": "tuple",
-        "internalType": "struct IHelloWorldServiceManager.Task",
+        "internalType": "struct MemeGuardServiceManager.Task",
         "components": [
           {
-            "name": "name",
+            "name": "assessmentType",
             "type": "string",
             "internalType": "string"
+          },
+          {
+            "name": "targetId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "targetAddress",
+            "type": "address",
+            "internalType": "address"
           },
           {
             "name": "taskCreatedBlock",
@@ -484,7 +767,7 @@
         ]
       },
       {
-        "name": "referenceTaskIndex",
+        "name": "taskId",
         "type": "uint32",
         "internalType": "uint32"
       },
@@ -492,6 +775,21 @@
         "name": "signature",
         "type": "bytes",
         "internalType": "bytes"
+      },
+      {
+        "name": "riskScore",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "isCritical",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "reportHash",
+        "type": "string",
+        "internalType": "string"
       }
     ],
     "outputs": [],
@@ -506,6 +804,30 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "riskScoreVotes",
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -548,12 +870,43 @@
   },
   {
     "type": "function",
+    "name": "setAuthorizedCaller",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "status",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setClaimerFor",
     "inputs": [
       {
         "name": "claimer",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setQuorum",
+    "inputs": [
+      {
+        "name": "_quorum",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -629,21 +982,31 @@
     "name": "NewTaskCreated",
     "inputs": [
       {
-        "name": "taskIndex",
+        "name": "taskId",
         "type": "uint32",
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint32"
       },
       {
         "name": "task",
         "type": "tuple",
         "indexed": false,
-        "internalType": "struct IHelloWorldServiceManager.Task",
+        "internalType": "struct MemeGuardServiceManager.Task",
         "components": [
           {
-            "name": "name",
+            "name": "assessmentType",
             "type": "string",
             "internalType": "string"
+          },
+          {
+            "name": "targetId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "targetAddress",
+            "type": "address",
+            "internalType": "address"
           },
           {
             "name": "taskCreatedBlock",
@@ -695,24 +1058,96 @@
   },
   {
     "type": "event",
+    "name": "RiskAssessmentSubmitted",
+    "inputs": [
+      {
+        "name": "targetId",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "assessmentType",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "riskScore",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "isCritical",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RiskConsensusReached",
+    "inputs": [
+      {
+        "name": "targetId",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "assessmentType",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "riskScore",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "isCritical",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "TaskResponded",
     "inputs": [
       {
-        "name": "taskIndex",
+        "name": "taskId",
         "type": "uint32",
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint32"
       },
       {
         "name": "task",
         "type": "tuple",
         "indexed": false,
-        "internalType": "struct IHelloWorldServiceManager.Task",
+        "internalType": "struct MemeGuardServiceManager.Task",
         "components": [
           {
-            "name": "name",
+            "name": "assessmentType",
             "type": "string",
             "internalType": "string"
+          },
+          {
+            "name": "targetId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "targetAddress",
+            "type": "address",
+            "internalType": "address"
           },
           {
             "name": "taskCreatedBlock",
@@ -737,6 +1172,16 @@
   },
   {
     "type": "error",
+    "name": "InvalidSignature",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidTask",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "OnlyRegistryCoordinator",
     "inputs": []
   },
@@ -748,6 +1193,21 @@
   {
     "type": "error",
     "name": "OnlyStakeRegistry",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TaskAlreadyResponded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TaskResponseMismatch",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Unauthorized",
     "inputs": []
   }
 ]

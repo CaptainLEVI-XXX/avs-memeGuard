@@ -9,7 +9,7 @@ const contractsToExtract = [
   'IAVSDirectory',
   'IDelegationManager',
   'ECDSAStakeRegistry',
-  'HelloWorldServiceManager'
+  'MemeGuardServiceManager'
 ];
 
 if (!fs.existsSync(abiDir)) {

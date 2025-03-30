@@ -21,41 +21,41 @@ async function loadJsonFile(filePath: string): Promise<any> {
   }
 }
 
-async function loadDeployments(): Promise<Record<string, any>> {
+async function loadDeployments() {
   const coreFilePath = path.join(__dirname, '..', 'contracts', 'deployments', 'core', '31337.json');
-  const helloWorldFilePath = path.join(__dirname, '..', 'contracts', 'deployments', 'hello-world', '31337.json');
+  const memeGuardFilePath = path.join(__dirname, '..', 'contracts', 'deployments', 'memeguard', '31337.json');
 
-  const [coreDeployment, helloWorldDeployment] = await Promise.all([
+  const [coreDeployment, memeGuardDeployment] = await Promise.all([
     loadJsonFile(coreFilePath),
-    loadJsonFile(helloWorldFilePath)
+    loadJsonFile(memeGuardFilePath)
   ]);
 
-  if (!coreDeployment || !helloWorldDeployment) {
+  if (!coreDeployment || !memeGuardDeployment) {
     console.error('Error loading deployments');
     return {};
   }
 
   return {
     core: coreDeployment,
-    helloWorld: helloWorldDeployment
+    memeguard: memeGuardDeployment
   };
 }
 
 describe('Operator Functionality', () => {
-  let anvil: Anvil;
+  let anvil:Anvil;
   let deployment: Record<string, any>;
-  let provider: ethers.JsonRpcProvider;
-  let signer: ethers.Wallet;
-  let delegationManager: ethers.Contract;
-  let helloWorldServiceManager: ethers.Contract;
-  let ecdsaRegistryContract: ethers.Contract;
-  let avsDirectory: ethers.Contract;
+  let provider:ethers.JsonRpcProvider;
+  let signer:ethers.Wallet;
+  let delegationManager:ethers.Contract;
+  let memeGuardServiceManager:ethers.Contract;
+  let ecdsaRegistryContract:ethers.Contract;
+  let avsDirectory:ethers.Contract;
 
   beforeAll(async () => {
     anvil = createAnvil();
     await anvil.start();
     await execAsync('npm run deploy:core');
-    await execAsync('npm run deploy:hello-world');
+    await execAsync('npm run deploy:memeguard');
     deployment = await loadDeployments();
 
     provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
@@ -63,12 +63,12 @@ describe('Operator Functionality', () => {
 
     const delegationManagerABI = await loadJsonFile(path.join(__dirname, '..', 'abis', 'IDelegationManager.json'));
     const ecdsaRegistryABI = await loadJsonFile(path.join(__dirname, '..', 'abis', 'ECDSAStakeRegistry.json'));
-    const helloWorldServiceManagerABI = await loadJsonFile(path.join(__dirname, '..', 'abis', 'HelloWorldServiceManager.json'));
+    const memeGuardServiceManagerABI = await loadJsonFile(path.join(__dirname, '..', 'abis', 'MemeGuardServiceManager.json'));
     const avsDirectoryABI = await loadJsonFile(path.join(__dirname, '..', 'abis', 'IAVSDirectory.json'));
 
     delegationManager = new ethers.Contract(deployment.core.addresses.delegationManager, delegationManagerABI, signer);
-    helloWorldServiceManager = new ethers.Contract(deployment.helloWorld.addresses.helloWorldServiceManager, helloWorldServiceManagerABI, signer);
-    ecdsaRegistryContract = new ethers.Contract(deployment.helloWorld.addresses.stakeRegistry, ecdsaRegistryABI, signer);
+    memeGuardServiceManager = new ethers.Contract(deployment.memeguard.addresses.memeGuardServiceManager, memeGuardServiceManagerABI, signer);
+    ecdsaRegistryContract = new ethers.Contract(deployment.memeguard.addresses.stakeRegistry, ecdsaRegistryABI, signer);
     avsDirectory = new ethers.Contract(deployment.core.addresses.avsDirectory, avsDirectoryABI, signer);
   });
 
@@ -90,7 +90,7 @@ describe('Operator Functionality', () => {
 
     const operatorDigestHash = await avsDirectory.calculateOperatorAVSRegistrationDigestHash(
       signer.address,
-      await helloWorldServiceManager.getAddress(),
+      await memeGuardServiceManager.getAddress(),
       salt,
       expiry
     );
@@ -114,32 +114,54 @@ describe('Operator Functionality', () => {
   });
 
   it('should create a new task', async () => {
-    const taskName = "Steven";
+    const assessmentType = "token";
+    const targetId = ethers.keccak256(ethers.toUtf8Bytes("TestToken"));
+    const targetAddress = "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE";
 
-    const tx = await helloWorldServiceManager.createNewTask(taskName);
+    const tx = await memeGuardServiceManager.createAssessmentTask(
+      assessmentType,
+      targetId,
+      targetAddress
+    );
     await tx.wait();
   });
 
   it('should sign and respond to a task', async () => {
     const taskIndex = 0;
     const taskCreatedBlock = await provider.getBlockNumber();
-    const taskName = "Steven";
-    const message = `Hello, ${taskName}`;
-    const messageHash = ethers.solidityPackedKeccak256(["string"], [message]);
+    const assessmentType = "token";
+    const targetId = ethers.keccak256(ethers.toUtf8Bytes("TestToken"));
+    const targetAddress = "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE";
+    
+    // Risk assessment data
+    const riskScore = 42; // Example risk score
+    const isCritical = false; // Not critical
+    const reportHash = "QmTestReportHash"; // Example IPFS hash for report
+    
+    // Create message hash
+    const messageHash = ethers.solidityPackedKeccak256(
+      ["string", "bytes32", "uint8", "bool", "string"],
+      [assessmentType, targetId, riskScore, isCritical, reportHash]
+    );
     const messageBytes = ethers.getBytes(messageHash);
     const signature = await signer.signMessage(messageBytes);
-
-    const operators = [await signer.getAddress()];
-    const signatures = [signature];
-    const signedTask = ethers.AbiCoder.defaultAbiCoder().encode(
-      ["address[]", "bytes[]", "uint32"],
-      [operators, signatures, ethers.toBigInt(taskCreatedBlock)]
-    );
-
-    const tx = await helloWorldServiceManager.respondToTask(
-      { name: taskName, taskCreatedBlock: taskCreatedBlock },
+    
+    // Create the task object
+    const task = {
+      assessmentType: assessmentType,
+      targetId: targetId,
+      targetAddress: targetAddress,
+      taskCreatedBlock: taskCreatedBlock
+    };
+    
+    // Respond to task
+    const tx = await memeGuardServiceManager.respondToAssessment(
+      task,
       taskIndex,
-      signedTask
+      signature,
+      riskScore,
+      isCritical,
+      reportHash
     );
     await tx.wait();
   });
